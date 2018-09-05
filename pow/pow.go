@@ -21,7 +21,6 @@ import (
 
 const difficulty = 1
 
-// Block represents each 'item' in the blockchain
 type Block struct {
 	Index      int
 	Timestamp  string
@@ -32,10 +31,8 @@ type Block struct {
 	Nonce      string
 }
 
-// Blockchain is a series of validated Blocks
 var Blockchain []Block
 
-// Message takes incoming JSON payload for writing heart rate
 type Message struct {
 	Value int
 }
@@ -62,7 +59,6 @@ func main() {
 
 }
 
-// web server
 func run() error {
 	mux := makeMuxRouter()
 	httpPort := os.Getenv("PORT")
@@ -82,7 +78,6 @@ func run() error {
 	return nil
 }
 
-// create handlers
 func makeMuxRouter() http.Handler {
 	muxRouter := mux.NewRouter()
 	muxRouter.HandleFunc("/", handleGetBlockchain).Methods("GET")
@@ -90,7 +85,6 @@ func makeMuxRouter() http.Handler {
 	return muxRouter
 }
 
-// write blockchain when we receive an http request
 func handleGetBlockchain(w http.ResponseWriter, r *http.Request) {
 	bytes, err := json.MarshalIndent(Blockchain, "", "  ")
 	if err != nil {
@@ -100,7 +94,6 @@ func handleGetBlockchain(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, string(bytes))
 }
 
-// takes JSON payload as an input for heart rate (Value)
 func handleWriteBlock(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var m Message
@@ -112,7 +105,6 @@ func handleWriteBlock(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	//ensure atomicity when creating new block
 	mutex.Lock()
 	newBlock := generateBlock(Blockchain[len(Blockchain)-1], m.Value)
 	mutex.Unlock()
@@ -138,7 +130,6 @@ func respondWithJSON(w http.ResponseWriter, r *http.Request, code int, payload i
 	w.Write(response)
 }
 
-// make sure block is valid by checking index, and comparing the hash of the previous block
 func isBlockValid(newBlock, oldBlock Block) bool {
 	if oldBlock.Index+1 != newBlock.Index {
 		return false
@@ -155,7 +146,6 @@ func isBlockValid(newBlock, oldBlock Block) bool {
 	return true
 }
 
-// SHA256 hasing
 func calculateHash(block Block) string {
 	record := strconv.Itoa(block.Index) + block.Timestamp + strconv.Itoa(block.Value) + block.PrevHash + block.Nonce
 	h := sha256.New()
@@ -164,7 +154,6 @@ func calculateHash(block Block) string {
 	return hex.EncodeToString(hashed)
 }
 
-// create a new block using previous block's hash
 func generateBlock(oldBlock Block, Value int) Block {
 	var newBlock Block
 
