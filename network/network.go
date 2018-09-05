@@ -26,12 +26,12 @@ type Block struct {
 }
 
 var Blockchain []Block
-
 var bcServer chan []Block
 var mutex = &sync.Mutex{}
 
 func main() {
 	err := godotenv.Load()
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -46,42 +46,48 @@ func main() {
 	httpPort := os.Getenv("PORT")
 
 	server, err := net.Listen("tcp", ":"+httpPort)
+
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	log.Println("HTTP Server Listening on port :", httpPort)
+
 	defer server.Close()
 
 	for {
 		conn, err := server.Accept()
+
 		if err != nil {
 			log.Fatal(err)
 		}
+
 		go handleConn(conn)
 	}
-
 }
 
 func handleConn(conn net.Conn) {
-
 	defer conn.Close()
 
 	io.WriteString(conn, "Enter a new Value:")
-
 	scanner := bufio.NewScanner(conn)
 
 	go func() {
 		for scanner.Scan() {
 			value, err := strconv.Atoi(scanner.Text())
+
 			if err != nil {
 				log.Printf("%v not a number: %v", scanner.Text(), err)
 				continue
 			}
+
 			newBlock, err := generateBlock(Blockchain[len(Blockchain)-1], value)
+
 			if err != nil {
 				log.Println(err)
 				continue
 			}
+
 			if isBlockValid(newBlock, Blockchain[len(Blockchain)-1]) {
 				newBlockchain := append(Blockchain, newBlock)
 				replaceChain(newBlockchain)
@@ -97,9 +103,11 @@ func handleConn(conn net.Conn) {
 			time.Sleep(30 * time.Second)
 			mutex.Lock()
 			output, err := json.Marshal(Blockchain)
+
 			if err != nil {
 				log.Fatal(err)
 			}
+
 			mutex.Unlock()
 			io.WriteString(conn, string(output))
 		}
@@ -108,7 +116,6 @@ func handleConn(conn net.Conn) {
 	for _ = range bcServer {
 		spew.Dump(Blockchain)
 	}
-
 }
 
 func isBlockValid(newBlock, oldBlock Block) bool {
@@ -129,9 +136,11 @@ func isBlockValid(newBlock, oldBlock Block) bool {
 
 func replaceChain(newBlocks []Block) {
 	mutex.Lock()
+
 	if len(newBlocks) > len(Blockchain) {
 		Blockchain = newBlocks
 	}
+
 	mutex.Unlock()
 }
 
@@ -140,15 +149,14 @@ func calculateHash(block Block) string {
 	h := sha256.New()
 	h.Write([]byte(record))
 	hashed := h.Sum(nil)
+
 	return hex.EncodeToString(hashed)
 }
 
 func generateBlock(oldBlock Block, Value int) (Block, error) {
-
 	var newBlock Block
 
 	t := time.Now()
-
 	newBlock.Index = oldBlock.Index + 1
 	newBlock.Timestamp = t.String()
 	newBlock.Value = Value

@@ -31,16 +31,16 @@ type Block struct {
 	Nonce      string
 }
 
-var Blockchain []Block
-
 type Message struct {
 	Value int
 }
 
+var Blockchain []Block
 var mutex = &sync.Mutex{}
 
 func main() {
 	err := godotenv.Load()
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -55,6 +55,7 @@ func main() {
 		Blockchain = append(Blockchain, genesisBlock)
 		mutex.Unlock()
 	}()
+
 	log.Fatal(run())
 
 }
@@ -63,6 +64,7 @@ func run() error {
 	mux := makeMuxRouter()
 	httpPort := os.Getenv("PORT")
 	log.Println("HTTP Server Listening on port :", httpPort)
+
 	s := &http.Server{
 		Addr:           ":" + httpPort,
 		Handler:        mux,
@@ -82,15 +84,18 @@ func makeMuxRouter() http.Handler {
 	muxRouter := mux.NewRouter()
 	muxRouter.HandleFunc("/", handleGetBlockchain).Methods("GET")
 	muxRouter.HandleFunc("/", handleWriteBlock).Methods("POST")
+
 	return muxRouter
 }
 
 func handleGetBlockchain(w http.ResponseWriter, r *http.Request) {
 	bytes, err := json.MarshalIndent(Blockchain, "", "  ")
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	io.WriteString(w, string(bytes))
 }
 
@@ -99,10 +104,12 @@ func handleWriteBlock(w http.ResponseWriter, r *http.Request) {
 	var m Message
 
 	decoder := json.NewDecoder(r.Body)
+
 	if err := decoder.Decode(&m); err != nil {
 		respondWithJSON(w, r, http.StatusBadRequest, r.Body)
 		return
 	}
+
 	defer r.Body.Close()
 
 	mutex.Lock()
@@ -121,11 +128,13 @@ func handleWriteBlock(w http.ResponseWriter, r *http.Request) {
 func respondWithJSON(w http.ResponseWriter, r *http.Request, code int, payload interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	response, err := json.MarshalIndent(payload, "", "  ")
+
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("HTTP 500: Internal Server Error"))
 		return
 	}
+
 	w.WriteHeader(code)
 	w.Write(response)
 }
@@ -151,6 +160,7 @@ func calculateHash(block Block) string {
 	h := sha256.New()
 	h.Write([]byte(record))
 	hashed := h.Sum(nil)
+
 	return hex.EncodeToString(hashed)
 }
 
@@ -158,7 +168,6 @@ func generateBlock(oldBlock Block, Value int) Block {
 	var newBlock Block
 
 	t := time.Now()
-
 	newBlock.Index = oldBlock.Index + 1
 	newBlock.Timestamp = t.String()
 	newBlock.Value = Value
@@ -168,6 +177,7 @@ func generateBlock(oldBlock Block, Value int) Block {
 	for i := 0; ; i++ {
 		hex := fmt.Sprintf("%x", i)
 		newBlock.Nonce = hex
+
 		if !isHashValid(calculateHash(newBlock), newBlock.Difficulty) {
 			fmt.Println(calculateHash(newBlock), " do more work!")
 			time.Sleep(time.Second)
@@ -177,12 +187,13 @@ func generateBlock(oldBlock Block, Value int) Block {
 			newBlock.Hash = calculateHash(newBlock)
 			break
 		}
-
 	}
+
 	return newBlock
 }
 
 func isHashValid(hash string, difficulty int) bool {
 	prefix := strings.Repeat("0", difficulty)
+
 	return strings.HasPrefix(hash, prefix)
 }
