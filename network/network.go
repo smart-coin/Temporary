@@ -44,7 +44,6 @@ func main() {
 	Blockchain = append(Blockchain, genesisBlock)
 
 	httpPort := os.Getenv("PORT")
-
 	server, err := net.Listen("tcp", ":"+httpPort)
 
 	if err != nil {
@@ -52,7 +51,6 @@ func main() {
 	}
 
 	log.Println("HTTP Server Listening on port :", httpPort)
-
 	defer server.Close()
 
 	for {

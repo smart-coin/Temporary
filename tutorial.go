@@ -25,12 +25,11 @@ type Block struct {
 	PrevHash  string
 }
 
-var Blockchain []Block
-
 type Message struct {
 	Value int
 }
 
+var Blockchain []Block
 var mutex = &sync.Mutex{}
 
 func main() {
