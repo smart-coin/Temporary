@@ -32,6 +32,9 @@ type Message struct {
 var Blockchain []Block
 var mutex = &sync.Mutex{}
 
+func init() {
+}
+
 func main() {
 	err := godotenv.Load()
 
